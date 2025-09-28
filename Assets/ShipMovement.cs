@@ -7,47 +7,32 @@ public class ShipMovement : MonoBehaviour
     public float movementDuration = 0.5f;
     public float rotationDuration = 0.3f;
     
-    // Ссылки на компоненты
     private Ship ship;
     private Grid grid;
     private TurnManager turnManager;
     
-    // Состояние движения
     private bool isMoving = false;
     private bool isRotating = false;
-    
-    // Визуальные компоненты (опционально)
-    private Animator animator;
-    private ParticleSystem movementParticles;
 
     void Awake()
     {
         ship = GetComponent<Ship>();
-        animator = GetComponent<Animator>();
-        movementParticles = GetComponentInChildren<ParticleSystem>();
     }
 
     void Start()
     {
         grid = FindObjectOfType<Grid>();
         turnManager = FindObjectOfType<TurnManager>();
-        
-        // Устанавливаем начальное визуальное направление
-        UpdateRotationVisual();
     }
 
     void Update()
     {
-        // Обрабатываем ввод только если это активный корабль в ходу игрока
         if (!CanProcessInput()) return;
         
         HandleRotationInput();
         HandleMovementInput();
     }
 
-    // === ОСНОВНЫЕ МЕТОДЫ ДВИЖЕНИЯ ===
-
-    // Поворот корабля
     public void Rotate(int directionChange)
     {
         if (!CanRotate()) return;
@@ -56,7 +41,6 @@ public class ShipMovement : MonoBehaviour
         StartCoroutine(RotateCoroutine(newDirection));
     }
 
-    // Перемещение корабля
     public void Move(int distance)
     {
         if (!CanMove(distance)) return;
@@ -65,19 +49,17 @@ public class ShipMovement : MonoBehaviour
         StartCoroutine(MoveCoroutine(targetCell));
     }
 
-    // === КОРУТИНЫ ДЛЯ АНИМАЦИЙ ===
-
-    // Плавный поворот
     private IEnumerator RotateCoroutine(int newDirection)
     {
         isRotating = true;
         
-        // Начинаем поворот
-        OnRotationStart();
-        
         float timer = 0f;
         Quaternion startRotation = transform.rotation;
-        Quaternion targetRotation = Quaternion.Euler(0, 0, -newDirection * 60f);
+        
+        // ИСПРАВЛЕННЫЙ РАСЧЕТ ДЛЯ ГЕКСАГОНАЛЬНОЙ СЕТКИ
+        // Для "pointy top" гексов каждое направление = 60 градусов
+        float angle = -newDirection * 60f - 90;
+        Quaternion targetRotation = Quaternion.Euler(0, 0, angle);
         
         while (timer < rotationDuration)
         {
@@ -87,21 +69,15 @@ public class ShipMovement : MonoBehaviour
             yield return null;
         }
         
-        // Завершаем поворот
         ship.direction = newDirection;
         transform.rotation = targetRotation;
         
-        OnRotationComplete();
         isRotating = false;
     }
 
-    // Плавное перемещение
     private IEnumerator MoveCoroutine(Vector3Int targetCell)
     {
         isMoving = true;
-        
-        // Начинаем движение
-        OnMovementStart();
         
         Vector3 startPosition = transform.position;
         Vector3 targetPosition = grid.CellToWorld(targetCell);
@@ -112,23 +88,17 @@ public class ShipMovement : MonoBehaviour
         {
             timer += Time.deltaTime;
             float progress = timer / movementDuration;
-            
-            // Кривая для плавного движения (можно настроить)
             float easedProgress = Mathf.SmoothStep(0f, 1f, progress);
             transform.position = Vector3.Lerp(startPosition, targetPosition, easedProgress);
             
             yield return null;
         }
         
-        // Завершаем движение
         transform.position = targetPosition;
         ship.UpdateGridPosition();
         
-        OnMovementComplete();
         isMoving = false;
     }
-
-    // === МЕТОДЫ ПРОВЕРКИ ВОЗМОЖНОСТИ ДЕЙСТВИЙ ===
 
     private bool CanProcessInput()
     {
@@ -153,9 +123,6 @@ public class ShipMovement : MonoBehaviour
         return grid.IsCellWalkable(targetCell);
     }
 
-    // === РАСЧЕТЫ И ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-
-    // Расчет целевой клетки для движения
     private Vector3Int CalculateMovementTarget(int distance)
     {
         Vector3Int currentCell = ship.gridPosition;
@@ -170,38 +137,14 @@ public class ShipMovement : MonoBehaviour
         return targetCell;
     }
 
-    // Получить все возможные клетки для движения
-    public Vector3Int[] GetPossibleMovementCells()
-    {
-        System.Collections.Generic.List<Vector3Int> possibleCells = new System.Collections.Generic.List<Vector3Int>();
-        
-        for (int distance = 1; distance <= ship.movementSpeed; distance++)
-        {
-            Vector3Int targetCell = CalculateMovementTarget(distance);
-            if (grid.IsCellWalkable(targetCell))
-            {
-                possibleCells.Add(targetCell);
-            }
-            else
-            {
-                // Если встретили препятствие, дальше двигаться нельзя
-                break;
-            }
-        }
-        
-        return possibleCells.ToArray();
-    }
-
-    // === ОБРАБОТКА ВВОДА ===
-
     private void HandleRotationInput()
     {
-        if (Input.GetKeyDown(KeyCode.Q)) // Поворот налево
+        if (Input.GetKeyDown(KeyCode.Q)) // Поворот налево (против часовой)
         {
             Rotate(-1);
             ship.UseAction();
         }
-        else if (Input.GetKeyDown(KeyCode.E)) // Поворот направо
+        else if (Input.GetKeyDown(KeyCode.E)) // Поворот направо (по часовой)
         {
             Rotate(1);
             ship.UseAction();
@@ -212,8 +155,6 @@ public class ShipMovement : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.M))
         {
-            // Здесь можно реализовать выбор расстояния через UI
-            // Пока что двигаемся на максимально возможное расстояние
             int distanceToMove = CalculateMaxPossibleDistance();
             if (distanceToMove > 0)
             {
@@ -227,7 +168,6 @@ public class ShipMovement : MonoBehaviour
         }
     }
 
-    // Расчет максимального расстояния, на которое можно переместиться
     private int CalculateMaxPossibleDistance()
     {
         int maxDistance = 0;
@@ -246,83 +186,5 @@ public class ShipMovement : MonoBehaviour
         }
         
         return maxDistance;
-    }
-
-    // === ВИЗУАЛЬНЫЕ ЭФФЕКТЫ ===
-
-    private void UpdateRotationVisual()
-    {
-        transform.rotation = Quaternion.Euler(0, 0, -ship.direction * 60f);
-    }
-
-    private void OnRotationStart()
-    {
-        // Воспроизвести звук поворота
-        // Включить анимацию поворота
-        if (animator != null) animator.SetTrigger("Rotate");
-    }
-
-    private void OnRotationComplete()
-    {
-        // Дополнительные эффекты после поворота
-    }
-
-    private void OnMovementStart()
-    {
-        // Воспроизвести звук движения
-        // Включить анимацию движения
-        if (animator != null) animator.SetBool("IsMoving", true);
-        if (movementParticles != null) movementParticles.Play();
-    }
-
-    private void OnMovementComplete()
-    {
-        // Остановить анимации
-        if (animator != null) animator.SetBool("IsMoving", false);
-        if (movementParticles != null) movementParticles.Stop();
-    }
-
-    // === МЕТОДЫ ДЛЯ UI ===
-
-    // Подсветка доступных для движения клеток
-    public void ShowMovementRange()
-    {
-        Vector3Int[] possibleCells = GetPossibleMovementCells();
-        
-        // Здесь можно реализовать подсветку клеток через Grid
-        // Например: grid.HighlightCells(possibleCells, Color.blue);
-    }
-
-    public void HideMovementRange()
-    {
-        // grid.ClearHighlights();
-    }
-
-    // === GIZMOS ДЛЯ ОТЛАДКИ ===
-
-    void OnDrawGizmosSelected()
-    {
-        if (!Application.isPlaying || ship == null) return;
-        
-        // Рисуем возможные пути движения
-        Gizmos.color = Color.blue;
-        Vector3Int[] possibleCells = GetPossibleMovementCells();
-        
-        foreach (Vector3Int cell in possibleCells)
-        {
-            Vector3 worldPos = grid.CellToWorld(cell);
-            Gizmos.DrawWireCube(worldPos, new Vector3(0.8f, 0.8f, 0.1f));
-        }
-        
-        // Подсвечиваем текущее направление
-        Gizmos.color = Color.green;
-        Vector3 directionEnd = transform.position + GetDirectionVector() * 2f;
-        Gizmos.DrawLine(transform.position, directionEnd);
-    }
-
-    private Vector3 GetDirectionVector()
-    {
-        float angle = ship.direction * 60f;
-        return Quaternion.Euler(0, 0, -angle) * Vector3.right;
     }
 }
