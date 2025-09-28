@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 83d43f6408985004b89285215021d743
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 135185
+  packageName: 2D Hex Sprites - Hexagonal Tile Setup
+  packageVersion: 1.11
+  assetPath: Assets/HexSpriteTiles_Setup/Misc/PPP_Myprofile.asset
+  uploadId: 308277

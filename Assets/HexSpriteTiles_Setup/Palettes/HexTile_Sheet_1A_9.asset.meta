@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 20246a90f5f4ed44eb9b6e880827c255
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 135185
+  packageName: 2D Hex Sprites - Hexagonal Tile Setup
+  packageVersion: 1.11
+  assetPath: Assets/HexSpriteTiles_Setup/Palettes/HexTile_Sheet_1A_9.asset
+  uploadId: 308277
