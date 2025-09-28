@@ -46,6 +46,15 @@ public class ShipMovement : MonoBehaviour
         if (!CanMove(distance)) return;
         
         Vector3Int targetCell = CalculateMovementTarget(distance);
+        
+        Debug.Log($"Движение из {ship.gridPosition} в направлении {ship.direction} на {distance} клеток:");
+        Vector3Int currentCell = ship.gridPosition;
+        for (int i = 1; i <= distance; i++)
+        {
+            currentCell = grid.GetNeighborCell(currentCell, ship.direction);
+            Debug.Log($"  Шаг {i}: {currentCell}");
+        }
+        
         StartCoroutine(MoveCoroutine(targetCell));
     }
 
