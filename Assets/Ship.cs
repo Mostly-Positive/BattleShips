@@ -41,22 +41,18 @@ public class Ship : MonoBehaviour
 
     void Awake()
     {
-        // Получаем компоненты на этом же GameObject
         movement = GetComponent<ShipMovement>();
         combat = GetComponent<ShipCombat>();
         
-        // Находим менеджеры в сцене
         grid = FindObjectOfType<Grid>();
         turnManager = FindObjectOfType<TurnManager>();
         
-        // Инициализируем характеристики
         currentHealth = maxHealth;
         currentActions = maxActions;
     }
 
     void Start()
     {
-        // Регистрируем начальную позицию на сетке
         UpdateGridPosition();
     }
 
@@ -65,7 +61,6 @@ public class Ship : MonoBehaviour
     {
         Vector3Int newCellPosition = grid.WorldToCell(transform.position);
         
-        // Если позиция изменилась, обновляем данные в сетке
         if (newCellPosition != gridPosition)
         {
             if (gridPosition != Vector3Int.zero) // Если это не начальная позиция
@@ -113,13 +108,10 @@ public class Ship : MonoBehaviour
     {
         Debug.Log($"{shipName} уничтожен!");
         
-        // Убираем корабль с сетки
         grid.RemoveShip(gridPosition);
         
-        // Оповещаем менеджер игры
         FindObjectOfType<GameManager>().OnShipDestroyed(this);
         
-        // Уничтожаем GameObject
         Destroy(gameObject);
     }
 
@@ -167,27 +159,5 @@ public class Ship : MonoBehaviour
     public Vector3 GetWorldPosition()
     {
         return grid.CellToWorld(gridPosition);
-    }
-
-    // Визуальное представление направления (для отладки)
-    void OnDrawGizmosSelected()
-    {
-        if (!Application.isPlaying) return;
-        
-        // Рисуем линию, показывающую направление корабля
-        Vector3 forward = GetDirectionVector() * 2f;
-        Gizmos.color = team == Team.Player ? Color.blue : Color.red;
-        Gizmos.DrawLine(transform.position, transform.position + forward);
-        
-        // Рисуем радиус атаки
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, attackRange * 1.5f); // 1.5f - примерный множитель для гексов
-    }
-
-    // Вспомогательный метод для получения вектора направления
-    private Vector3 GetDirectionVector()
-    {
-        float angle = direction * 60f; // 60 градусов на направление
-        return Quaternion.Euler(0, 0, -angle) * Vector3.right;
     }
 }

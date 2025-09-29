@@ -43,7 +43,6 @@ public class TurnManager : MonoBehaviour
 
     void Start()
     {
-        // Начинаем игру с хода игрока
         StartCoroutine(StartGameRoutine());
     }
 
@@ -61,12 +60,10 @@ public class TurnManager : MonoBehaviour
     // Запуск игры
     private IEnumerator StartGameRoutine()
     {
-        yield return new WaitForSeconds(1f); // Небольшая задержка для инициализации
+        yield return new WaitForSeconds(1f); 
         
-        // Собираем все корабли на сцене
         FindAllShips();
         
-        // Начинаем с хода игрока
         StartTeamTurn(Team.Player);
     }
 
@@ -78,10 +75,8 @@ public class TurnManager : MonoBehaviour
         currentTeam = team;
         currentTeamShips = (team == Team.Player) ? playerShips : enemyShips;
         
-        // Убираем уничтоженные корабли
         currentTeamShips.RemoveAll(ship => ship == null || ship.currentHealth <= 0);
         
-        // Проверяем условие победы
         if (currentTeamShips.Count == 0)
         {
             Team winningTeam = (team == Team.Player) ? Team.Enemy : Team.Player;
@@ -90,11 +85,9 @@ public class TurnManager : MonoBehaviour
             return;
         }
         
-        // Начинаем с первого корабля команды
         currentShipIndex = 0;
         StartShipTurn(currentTeamShips[currentShipIndex]);
         
-        // Уведомляем UI о смене команды
         OnTeamChanged?.Invoke(currentTeam);
         OnTurnNumberChanged?.Invoke(turnNumber);
         
@@ -107,29 +100,24 @@ public class TurnManager : MonoBehaviour
         currentShip = ship;
         isTurnInProgress = true;
         
-        // Сбрасываем действия корабля
         ship.ResetActions();
         
-        // Уведомляем UI о смене активного корабля
         OnShipChanged?.Invoke(currentShip);
         
         Debug.Log($"Активный корабль: {ship.shipName}, действий: {ship.currentActions}");
         
-        // Если это вражеский корабль, запускаем ИИ
         if (currentTeam == Team.Enemy)
         {
             StartCoroutine(EnemyTurnRoutine());
         }
     }
 
-    // Завершить ход текущего корабля
     public void EndCurrentShipTurn()
     {
         if (!isTurnInProgress || currentShip == null) return;
         
         Debug.Log($"Завершен ход корабля: {currentShip.shipName}");
         
-        // Переходим к следующему кораблю
         NextShip();
     }
 
@@ -138,14 +126,12 @@ public class TurnManager : MonoBehaviour
     {
         currentShipIndex++;
         
-        // Если в команде еще есть корабли, переходим к следующему
         if (currentShipIndex < currentTeamShips.Count)
         {
             StartShipTurn(currentTeamShips[currentShipIndex]);
         }
         else
         {
-            // Все корабли команды походили, переходим к следующей команде
             StartCoroutine(NextTeamRoutine());
         }
     }
@@ -157,16 +143,13 @@ public class TurnManager : MonoBehaviour
         
         yield return new WaitForSeconds(turnTransitionDelay);
         
-        // Определяем следующую команду
         Team nextTeam = (currentTeam == Team.Player) ? Team.Enemy : Team.Player;
         
-        // Увеличиваем номер хода если завершили ход игрока
         if (currentTeam == Team.Player)
         {
             turnNumber++;
         }
         
-        // Начинаем ход следующей команды
         StartTeamTurn(nextTeam);
     }
 
@@ -201,7 +184,6 @@ public class TurnManager : MonoBehaviour
     {
         ShipCombat combat = enemyShip.combat;
         
-        // Сначала пробуем абордаж
         List<Ship> boardingTargets = combat.GetPossibleBoardingTargets();
         if (boardingTargets.Count > 0 && enemyShip.CanAct())
         {
@@ -209,7 +191,6 @@ public class TurnManager : MonoBehaviour
             return true;
         }
         
-        // Затем пробуем стрельбу
         List<Ship> rangedTargets = combat.GetPossibleRangedTargets();
         if (rangedTargets.Count > 0 && enemyShip.CanAct())
         {
@@ -220,16 +201,13 @@ public class TurnManager : MonoBehaviour
         return false;
     }
 
-    // Попытка движения вражеским кораблем
     private bool TryEnemyMovement(Ship enemyShip)
     {
         ShipMovement movement = enemyShip.movement;
         
-        // Простой ИИ: двигаемся к ближайшему вражескому кораблю
         Ship nearestEnemy = FindNearestEnemy(enemyShip);
         if (nearestEnemy != null)
         {
-            // Упрощенное движение - всегда двигаемся вперед
             movement.Move(1);
             return true;
         }
@@ -297,7 +275,6 @@ public class TurnManager : MonoBehaviour
             currentTeamShips.Remove(ship);
         }
         
-        // Если текущий корабль уничтожен, переходим к следующему
         if (currentShip == ship)
         {
             NextShip();
@@ -333,54 +310,5 @@ public class TurnManager : MonoBehaviour
         {
             EndCurrentShipTurn();
         }
-    }
-
-    // === GIZMOS ДЛЯ ОТЛАДКИ ===
-
-    void OnDrawGizmos()
-    {
-        if (!Application.isPlaying) return;
-        
-        // Подсвечиваем текущий активный корабль
-        if (currentShip != null)
-        {
-            Gizmos.color = (currentTeam == Team.Player) ? Color.blue : Color.red;
-            Gizmos.DrawWireSphere(currentShip.transform.position + Vector3.up * 2f, 1f);
-            
-            // Рисуем значок над активным кораблем
-            DrawIconAboveShip(currentShip.transform.position, currentTeam == Team.Player ? "P" : "E");
-        }
-        
-        // Отображаем информацию о ходе
-        DrawTurnInfo();
-    }
-
-    // Рисуем значок над кораблем (для отладки)
-    private void DrawIconAboveShip(Vector3 position, string icon)
-    {
-        #if UNITY_EDITOR
-        GUIStyle style = new GUIStyle();
-        style.normal.textColor = (currentTeam == Team.Player) ? Color.blue : Color.red;
-        style.fontSize = 20;
-        style.fontStyle = FontStyle.Bold;
-        UnityEditor.Handles.Label(position + Vector3.up * 3f, icon, style);
-        #endif
-    }
-
-    // Отображение информации о ходе
-    private void DrawTurnInfo()
-    {
-        #if UNITY_EDITOR
-        string turnInfo = $"Ход: {turnNumber}\nКоманда: {currentTeam}\n";
-        turnInfo += (currentShip != null) ? $"Корабль: {currentShip.shipName}\nДействия: {currentShip.currentActions}" : "Нет активного корабля";
-        
-        GUIStyle style = new GUIStyle();
-        style.normal.textColor = Color.white;
-        style.fontSize = 12;
-        style.fontStyle = FontStyle.Bold;
-        style.normal.background = Texture2D.grayTexture;
-        
-        UnityEditor.Handles.Label(new Vector3(10, 10, 0), turnInfo, style);
-        #endif
     }
 }

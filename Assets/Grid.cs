@@ -7,7 +7,7 @@ public class Grid : MonoBehaviour
     public Tilemap Tilemap { get; private set; }
     private Dictionary<Vector3Int, Ship> cellToShipMap;
 
-    // ПРАВИЛЬНЫЕ НАПРАВЛЕНИЯ ДЛЯ ГЕКСАГОНАЛЬНОЙ СЕТКИ "POINTY TOP"
+    // ПРАВИЛЬНЫЕ НАПРАВЛЕНИЯ ДЛЯ ГЕКСАГОНАЛЬНОЙ СЕТКИ "POINT TOP"
     // Для гексагональной сетки "pointy top" направления:
     // 0: Восток  (1, 0)
     // 1: Юго-Восток (1, -1) - ТОЛЬКО ДЛЯ ЧЕТНЫХ СТРОК, (0, -1) для нечетных
@@ -102,14 +102,13 @@ public class Grid : MonoBehaviour
         return ship;
     }
 
-    // === ИСПРАВЛЕННЫЕ МЕТОДЫ ДЛЯ НАВИГАЦИИ ===
+    // === МЕТОДЫ ДЛЯ НАВИГАЦИИ ===
 
     // Получить соседнюю клетку в заданном направлении (0-5)
     public Vector3Int GetNeighborCell(Vector3Int cellPosition, int direction)
     {
-        direction = (direction % 6 + 6) % 6; // Нормализуем направление в диапазон 0-5
+        direction = (direction % 6 + 6) % 6; 
         
-        // Определяем четность строки для правильного смещения
         Vector3Int[] directions = (cellPosition.y % 2 == 0) ? DirectionsEven : DirectionsOdd;
         
         return cellPosition + directions[direction];
@@ -118,7 +117,6 @@ public class Grid : MonoBehaviour
     // Рассчитать расстояние между двумя клетками в гексах
     public int GetDistance(Vector3Int fromCell, Vector3Int toCell)
     {
-        // Конвертируем offset coordinates в axial coordinates
         Vector3Int axialFrom = OffsetToAxial(fromCell);
         Vector3Int axialTo = OffsetToAxial(toCell);
         
@@ -170,7 +168,7 @@ public class Grid : MonoBehaviour
         return new Vector3Int(x, y, 0);
     }
 
-    // === ИСПРАВЛЕННЫЙ МЕТОД ДЛЯ ПОЛУЧЕНИЯ "БОКОВЫХ" КЛЕТОК ===
+    // === МЕТОД ДЛЯ ПОЛУЧЕНИЯ "БОКОВЫХ" КЛЕТОК ===
     public List<Vector3Int> GetSideCellsInRange(Vector3Int centerCell, int shipDirection, int range)
     {
         List<Vector3Int> sideCells = new List<Vector3Int>();

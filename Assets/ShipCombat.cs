@@ -37,7 +37,6 @@ public class ShipCombat : MonoBehaviour
 
     void Update()
     {
-        // Обрабатываем ввод только если это активный корабль в ходу игрока
         if (!CanProcessInput()) return;
         
         HandleCombatInput();
@@ -69,16 +68,13 @@ public class ShipCombat : MonoBehaviour
         isAttacking = true;
         OnAttackStart();
         
-        // Анимация абордажа
         if (animator != null) animator.SetTrigger("Boarding");
         
         yield return new WaitForSeconds(attackAnimationDuration);
         
-        // Расчет урона от абордажа
         int attackerDamage = CalculateBoardingDamage(ship);
         int defenderDamage = CalculateBoardingDamage(target);
         
-        // Применение урона
         if (attackerDamage > defenderDamage)
         {
             int damage = attackerDamage - defenderDamage;
@@ -99,7 +95,6 @@ public class ShipCombat : MonoBehaviour
         OnAttackComplete();
         isAttacking = false;
         
-        // Используем действие
         ship.UseAction();
     }
 
@@ -109,10 +104,8 @@ public class ShipCombat : MonoBehaviour
         isAttacking = true;
         OnAttackStart();
         
-        // Анимация стрельбы
         if (animator != null) animator.SetTrigger("RangedAttack");
         
-        // Визуальный эффект выстрела
         if (cannonballPrefab != null && cannonballSpawnPoint != null)
         {
             GameObject cannonball = Instantiate(cannonballPrefab, cannonballSpawnPoint.position, Quaternion.identity);
@@ -121,7 +114,6 @@ public class ShipCombat : MonoBehaviour
         
         yield return new WaitForSeconds(attackAnimationDuration);
         
-        // Расчет урона от стрельбы
         int attackRoll = ship.RollDice(ship.rangedAttackDamage);
         int damage = Mathf.Max(0, attackRoll - target.armor);
         
@@ -138,11 +130,9 @@ public class ShipCombat : MonoBehaviour
         OnAttackComplete();
         isAttacking = false;
         
-        // Используем действие
         ship.UseAction();
     }
 
-    // Анимация полета ядра
     private IEnumerator MoveCannonball(GameObject cannonball, Vector3 targetPosition)
     {
         float duration = 0.5f;
@@ -305,8 +295,6 @@ public class ShipCombat : MonoBehaviour
             List<Ship> boardingTargets = GetPossibleBoardingTargets();
             if (boardingTargets.Count > 0)
             {
-                // Для простоты берем первую доступную цель
-                // В полной реализации можно добавить выбор цели через UI
                 BoardingAttack(boardingTargets[0]);
             }
             else
@@ -321,7 +309,6 @@ public class ShipCombat : MonoBehaviour
             List<Ship> rangedTargets = GetPossibleRangedTargets();
             if (rangedTargets.Count > 0)
             {
-                // Для простоты берем первую доступную цель
                 RangedAttack(rangedTargets[0]);
             }
             else
@@ -335,14 +322,11 @@ public class ShipCombat : MonoBehaviour
 
     private void OnAttackStart()
     {
-        // Воспроизвести звук подготовки к атаке
-        // Включить частицы
         if (attackParticles != null) attackParticles.Play();
     }
 
     private void OnAttackComplete()
     {
-        // Остановить частицы
         if (attackParticles != null) attackParticles.Stop();
     }
 
@@ -369,74 +353,5 @@ public class ShipCombat : MonoBehaviour
     public void HideAttackRange()
     {
         // Снять подсветку со всех целей
-    }
-
-    // === GIZMOS ДЛЯ ОТЛАДКИ ===
-
-    void OnDrawGizmosSelected()
-    {
-        if (!Application.isPlaying || ship == null) return;
-        
-        // Рисуем радиус абордажа (соседние клетки)
-        Gizmos.color = Color.red;
-        Vector3Int currentPos = ship.gridPosition;
-        
-        for (int direction = 0; direction < 6; direction++)
-        {
-            Vector3Int neighbor = grid.GetNeighborCell(currentPos, direction);
-            Vector3 worldPos = grid.CellToWorld(neighbor);
-            Gizmos.DrawWireCube(worldPos, new Vector3(0.6f, 0.6f, 0.1f));
-        }
-        
-        // Рисуем сектор стрельбы
-        Gizmos.color = Color.yellow;
-        List<Vector3Int> sideCells = grid.GetSideCellsInRange(currentPos, ship.direction, ship.attackRange);
-        foreach (Vector3Int cell in sideCells)
-        {
-            Vector3 worldPos = grid.CellToWorld(cell);
-            Gizmos.DrawWireSphere(worldPos, 0.3f);
-        }
-        
-        // Рисуем направление корабля и сектора
-        DrawAttackSectorGizmo();
-    }
-
-    // Визуализация секторов атаки
-    private void DrawAttackSectorGizmo()
-    {
-        Vector3 center = transform.position;
-        float radius = ship.attackRange * 1.5f; // Множитель для визуализации
-        
-        // Определяем углы сектора стрельбы (4 боковых направления)
-        int[] sideDirections = {
-            (ship.direction + 1) % 6,
-            (ship.direction + 2) % 6,
-            (ship.direction + 4) % 6,
-            (ship.direction + 5) % 6
-        };
-        
-        Gizmos.color = new Color(1, 1, 0, 0.3f); // Полупрозрачный желтый
-        
-        foreach (int dir in sideDirections)
-        {
-            float angle = dir * 60f; // 60 градусов на направление
-            Vector3 direction = Quaternion.Euler(0, 0, -angle) * Vector3.right;
-            Vector3 endPoint = center + direction * radius;
-            Gizmos.DrawLine(center, endPoint);
-        }
-        
-        // Заливаем сектор (примерно)
-        for (int i = 0; i < sideDirections.Length; i += 2)
-        {
-            float angle1 = sideDirections[i] * 60f;
-            float angle2 = sideDirections[i + 1] * 60f;
-            
-            Vector3 point1 = center + Quaternion.Euler(0, 0, -angle1) * Vector3.right * radius;
-            Vector3 point2 = center + Quaternion.Euler(0, 0, -angle2) * Vector3.right * radius;
-            
-            Gizmos.DrawLine(center, point1);
-            Gizmos.DrawLine(center, point2);
-            Gizmos.DrawLine(point1, point2);
-        }
     }
 }

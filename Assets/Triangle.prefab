@@ -107,9 +107,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Ship
   team: 0
   shipName: freg
-  maxActions: 2
+  maxActions: 3
   currentActions: 0
-  maxHealth: 100
+  maxHealth: 25
   currentHealth: 0
   armor: 5
   movementSpeed: 3
